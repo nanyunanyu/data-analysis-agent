@@ -1,4 +1,4 @@
-# 数据分析 Agent 🤖📊
+# 数据分析 Agent
 
 [中文](./README.md) | [English](./README.en.md)
 
@@ -6,7 +6,7 @@
 
 > **项目定位**：这是一个技术作品集 / Agent 架构学习项目。它不仅实现了可运行的数据分析 Demo，也保留了 5 种 Agent Loop 的演进版本，用于展示从“分阶段流程控制”到“工具驱动自主执行”的架构探索过程。
 
-## 🎬 演示
+## 视频演示
 
 https://github.com/user-attachments/assets/1e3afc0b-32d9-4c13-a59f-c77ed540dd3e
 
@@ -22,7 +22,7 @@ https://github.com/user-attachments/assets/1e3afc0b-32d9-4c13-a59f-c77ed540dd3e
 - **交互式前端体验**：React + TypeScript + Tailwind CSS 构建，支持中英文界面、亮/暗色主题、任务列表、过程面板和报告面板。
 - **面向工程展示的完整项目结构**：包含 FastAPI API、WebSocket、配置管理、日志记录、前端状态管理和分析报告渲染。
 
-## 🧭 系统架构
+## 系统架构
 
 ```text
 用户上传 Excel/CSV + 输入分析需求
@@ -53,13 +53,13 @@ Markdown 报告 + 图表 + 实时事件流
 | `backend/config/` | 基于 Pydantic Settings 的环境变量配置 |
 | `record/` | 自动生成的会话日志和 LLM 交互日志 |
 
-## 🧠 Agent 架构探索
+## Agent 架构探索
 
 项目中保留了 5 种 Agent 运行模式。它们代表了不同的控制权分配方式：
 
 | 模式 | 控制策略 | 特点 | 适合场景 |
 | --- | --- | --- | --- |
-| `tool_driven` ⭐ | LLM 通过工具调用管理任务生命周期 | 默认推荐；LLM 创建任务、更新状态、执行分析、输出报告 | 复杂、开放式分析任务 |
+| `tool_driven` | LLM 通过工具调用管理任务生命周期 | 默认推荐；LLM 创建任务、更新状态、执行分析、输出报告 | 复杂、开放式分析任务 |
 | `task_driven` | 代码控制任务流程，LLM 辅助执行 | 流程更稳定，任务顺序更可控 | 需要明确执行顺序的任务 |
 | `hybrid` | 代码控制任务选择，LLM 自主完成任务内容 | 在控制性和灵活性之间折中 | 中等复杂度分析 |
 | `autonomous` | LLM 通过标签解析自主决策 | 更接近自由对话式 Agent，但解析稳定性更依赖提示词 | 架构实验和学习 |
@@ -67,7 +67,7 @@ Markdown 报告 + 图表 + 实时事件流
 
 默认模式为 `tool_driven`，可通过 `backend/.env` 中的 `AGENT_MODE` 切换。
 
-## 🛠️ 技术栈
+## 技术栈
 
 ### 后端
 
@@ -86,12 +86,12 @@ Markdown 报告 + 图表 + 实时事件流
 - **ECharts / Mermaid / React Markdown**：图表、流程图和 Markdown 报告渲染
 - **WebSocket Hook**：实时接收 Agent 执行事件
 
-## 🚀 快速开始
+## 快速开始
 
 ### 环境要求
 
-- Python 3.9+
-- Node.js 18+
+- Python 3.10+
+- Node.js 22+
 - 一个兼容 OpenAI API 协议的大模型服务 Key
 
 ### 1. 配置后端环境变量
@@ -162,7 +162,7 @@ Vite 开发服务器会把 `/api` 和 `/ws` 代理到后端的 `http://localhost
 4. **查看实时过程**：WebSocket 推送任务规划、工具调用、代码执行、图表生成等事件。
 5. **查看分析报告**：任务完成后自动切换到报告面板，展示 Markdown 报告和生成图表。
 
-## 🔌 API 简览
+##  API 简览
 
 ### REST API
 
@@ -228,7 +228,7 @@ data-analysis-agent/
 - 上传文件会临时保存到服务器目录，使用前请根据数据隐私要求调整存储和清理策略。
 - LLM 调用会产生费用，复杂分析任务可能触发多轮工具调用和多次模型请求。
 
-## 🗺️ 后续方向
+## 后续方向
 
 - [ ] 支持 JSON、Parquet 等更多数据格式
 - [ ] 增强代码执行沙箱和资源限制
@@ -238,6 +238,6 @@ data-analysis-agent/
 - [ ] 支持报告导出和自定义分析模板
 - [ ] 为不同 Agent Loop 增加自动化评测样例
 
-## 📄 License
+## License
 
 MIT License

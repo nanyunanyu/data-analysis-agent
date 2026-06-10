@@ -1,4 +1,4 @@
-# Data Analysis Agent 🤖📊
+# Data Analysis Agent
 
 [中文](./README.md) | [English](./README.en.md)
 
@@ -6,13 +6,13 @@ A full-stack AI Agent project for data analysis workflows. Users upload an Excel
 
 > **Project positioning**: This is an engineering portfolio and Agent architecture learning project. It provides a runnable data-analysis demo and keeps 5 Agent Loop implementations to show the evolution from staged code-controlled workflows to tool-driven autonomous execution.
 
-## 🎬 Demo
+## Video Demo
 
 https://github.com/user-attachments/assets/1e3afc0b-32d9-4c13-a59f-c77ed540dd3e
 
 If the online preview is unavailable, see the local demo asset: [`docs/assets/demo.mp4`](./docs/assets/demo.mp4).
 
-## ✨ Highlights
+## Highlights
 
 - **End-to-end data analysis Agent**: Covers dataset inspection, requirement understanding, task planning, code generation, result interpretation, and report generation.
 - **5 Agent Loop architectures**: Includes staged, autonomous, hybrid, task-driven, and tool-driven implementations, making it easy to compare how control shifts from application code to LLM tool calls.
@@ -22,7 +22,7 @@ If the online preview is unavailable, see the local demo asset: [`docs/assets/de
 - **Interactive frontend experience**: Built with React, TypeScript, and Tailwind CSS; supports Chinese/English UI, light/dark themes, task lists, process panels, and report rendering.
 - **Complete engineering structure**: Demonstrates FastAPI APIs, WebSocket communication, configuration management, logging, frontend state handling, and report visualization.
 
-## 🧭 Architecture
+## Architecture
 
 ```text
 User uploads Excel/CSV + enters analysis request
@@ -53,13 +53,13 @@ Markdown report + charts + real-time event stream
 | `backend/config/` | Environment-based configuration with Pydantic Settings |
 | `record/` | Generated session logs and LLM interaction logs |
 
-## 🧠 Agent Architecture Exploration
+## Agent Architecture Exploration
 
 The project keeps 5 Agent runtime modes. Each mode represents a different way to distribute control between deterministic application code and the LLM:
 
 | Mode | Control strategy | Characteristics | Best for |
 | --- | --- | --- | --- |
-| `tool_driven` ⭐ | The LLM manages the task lifecycle through tool calls | Default and recommended; the LLM creates tasks, updates status, runs analysis, and outputs the final report | Complex and open-ended analysis tasks |
+| `tool_driven` | The LLM manages the task lifecycle through tool calls | Default and recommended; the LLM creates tasks, updates status, runs analysis, and outputs the final report | Complex and open-ended analysis tasks |
 | `task_driven` | Application code controls the task flow, while the LLM assists execution | More stable flow and stricter task ordering | Tasks that require clear execution order |
 | `hybrid` | Code selects tasks, while the LLM completes task content autonomously | Balances controllability and flexibility | Medium-complexity analysis |
 | `autonomous` | The LLM makes decisions through tag parsing | Closer to a free-form autonomous Agent, but more dependent on prompt and parser stability | Architecture experiments and learning |
@@ -67,7 +67,7 @@ The project keeps 5 Agent runtime modes. Each mode represents a different way to
 
 The default mode is `tool_driven`. You can switch modes by changing `AGENT_MODE` in `backend/.env`.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend
 
@@ -86,7 +86,7 @@ The default mode is `tool_driven`. You can switch modes by changing `AGENT_MODE`
 - **ECharts / Mermaid / React Markdown**: Chart, diagram, and Markdown report rendering
 - **WebSocket Hook**: Receives real-time Agent execution events
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Requirements
 
@@ -162,7 +162,7 @@ The Vite dev server proxies `/api` and `/ws` to the backend at `http://localhost
 4. **Watch the real-time process**: WebSocket events show task planning, tool calls, code execution, chart generation, and status updates.
 5. **Read the report**: After completion, the UI switches to the report panel and renders the generated Markdown report and charts.
 
-## 🔌 API Overview
+## API Overview
 
 ### REST API
 
@@ -228,7 +228,7 @@ data-analysis-agent/
 - Uploaded files are temporarily stored on the server. Adjust storage and cleanup policies based on your privacy requirements.
 - LLM calls may incur cost. Complex analysis tasks can trigger multiple tool calls and model requests.
 
-## 🗺️ Roadmap
+## Roadmap
 
 - [ ] Support more data formats such as JSON and Parquet
 - [ ] Strengthen code execution sandboxing and resource limits
@@ -238,6 +238,6 @@ data-analysis-agent/
 - [ ] Support report export and custom analysis templates
 - [ ] Add automated evaluation examples for different Agent Loops
 
-## 📄 License
+## License
 
 MIT License
