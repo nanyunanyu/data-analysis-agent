@@ -6,10 +6,6 @@
 
 > **项目定位**：这是一个技术作品集 / Agent 架构学习项目。它不仅实现了可运行的数据分析 Demo，也保留了 5 种 Agent Loop 的演进版本，用于展示从“分阶段流程控制”到“工具驱动自主执行”的架构探索过程。
 
-## 视频演示
-
-https://github.com/user-attachments/assets/1e3afc0b-32d9-4c13-a59f-c77ed540dd3e
-
 
 ## ✨ 项目亮点
 
