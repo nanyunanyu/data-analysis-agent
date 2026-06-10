@@ -6,11 +6,6 @@ A full-stack AI Agent project for data analysis workflows. Users upload an Excel
 
 > **Project positioning**: This is an engineering portfolio and Agent architecture learning project. It provides a runnable data-analysis demo and keeps 5 Agent Loop implementations to show the evolution from staged code-controlled workflows to tool-driven autonomous execution.
 
-## Video Demo
-
-https://github.com/user-attachments/assets/1e3afc0b-32d9-4c13-a59f-c77ed540dd3e
-
-If the online preview is unavailable, see the local demo asset: [`docs/assets/demo.mp4`](./docs/assets/demo.mp4).
 
 ## Highlights
 
