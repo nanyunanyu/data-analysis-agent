@@ -10,7 +10,6 @@
 
 https://github.com/user-attachments/assets/1e3afc0b-32d9-4c13-a59f-c77ed540dd3e
 
-如果在线预览不可用，也可以查看本地演示资源：[`docs/assets/demo.mp4`](./docs/assets/demo.mp4)。
 
 ## ✨ 项目亮点
 
