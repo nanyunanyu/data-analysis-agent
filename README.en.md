@@ -139,6 +139,8 @@ npm install
 npm run dev
 ```
 
+The frontend proxies `/api` and `/ws` to `http://localhost:8003` by default. If the backend runs on a different port or host, copy `frontend/.env.example` to `frontend/.env.local` and set `VITE_BACKEND_PORT` or `VITE_BACKEND_URL`.
+
 ### 4. Open the app
 
 Visit:
@@ -147,7 +149,7 @@ Visit:
 http://localhost:3000
 ```
 
-The Vite dev server proxies `/api` and `/ws` to the backend at `http://localhost:8003`.
+If the app says it cannot connect to the backend, make sure the backend command uses `--port 8003`, or that `frontend/.env.local` matches the actual backend address.
 
 ## 📖 Usage Flow
 

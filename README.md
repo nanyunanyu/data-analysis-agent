@@ -139,6 +139,8 @@ npm install
 npm run dev
 ```
 
+前端默认把 `/api` 和 `/ws` 代理到 `http://localhost:8003`。如果后端端口或地址不同，复制 `frontend/.env.example` 为 `frontend/.env.local`，并设置 `VITE_BACKEND_PORT` 或 `VITE_BACKEND_URL`。
+
 ### 4. 访问应用
 
 打开浏览器访问：
@@ -147,7 +149,7 @@ npm run dev
 http://localhost:3000
 ```
 
-Vite 开发服务器会把 `/api` 和 `/ws` 代理到后端的 `http://localhost:8003`。
+如果启动分析时提示无法连接后端，请确认后端命令使用的是 `--port 8003`，或 `frontend/.env.local` 与后端实际地址一致。
 
 ## 📖 使用流程
 

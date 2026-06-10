@@ -39,6 +39,41 @@ interface AnalysisResult {
   }>
 }
 
+const PROXY_CONNECTION_ERROR_STATUSES = new Set([500, 502, 503, 504])
+const PROXY_CONNECTION_ERROR_PATTERNS = [
+  'proxy',
+  'econnrefused',
+  'econnreset',
+  'enotfound',
+  'socket hang up',
+]
+
+function getApiErrorDetail(rawError: string): string | null {
+  if (!rawError.trim()) return null
+
+  try {
+    const data = JSON.parse(rawError) as { detail?: unknown }
+    if (typeof data.detail === 'string') return data.detail
+    if (data.detail !== undefined && data.detail !== null) {
+      return JSON.stringify(data.detail)
+    }
+  } catch {
+    return null
+  }
+
+  return null
+}
+
+function isLikelyProxyConnectionError(status: number, rawError: string): boolean {
+  if (!PROXY_CONNECTION_ERROR_STATUSES.has(status)) return false
+
+  const normalizedError = rawError.trim().toLowerCase()
+  return (
+    !normalizedError ||
+    PROXY_CONNECTION_ERROR_PATTERNS.some((pattern) => normalizedError.includes(pattern))
+  )
+}
+
 function App() {
   // 状态
   const [appState, setAppState] = useState<AppState>('idle')
@@ -312,8 +347,18 @@ function App() {
       console.log(`[App] API 响应耗时: ${apiDuration}ms`)
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.detail || `${copy.error.server}: ${response.status}`)
+        const rawError = await response.text().catch(() => '')
+        const errorDetail = getApiErrorDetail(rawError)
+
+        if (errorDetail) {
+          throw new Error(errorDetail)
+        }
+
+        if (isLikelyProxyConnectionError(response.status, rawError)) {
+          throw new Error(copy.error.backendOffline)
+        }
+
+        throw new Error(`${copy.error.server}: ${response.status}`)
       }
 
       const data = await response.json()
