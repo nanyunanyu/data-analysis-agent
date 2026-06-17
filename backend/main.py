@@ -415,6 +415,82 @@ async def run_agent_with_error_handling(agent, session_id: str):
         stop_manager.cleanup(session_id)
 
 
+@app.post("/api/chat/{original_session_id}")
+async def chat_followup(
+    original_session_id: str,
+    question: str = Form(...),
+    previous_report: str = Form(default="")
+):
+    """
+    对已完成分析的追问接口
+    - 使用原 session 的数据集文件
+    - 将前一次报告作为上下文
+    """
+    session_dir = Path(settings.UPLOAD_DIR) / original_session_id
+    if not session_dir.exists():
+        raise HTTPException(status_code=404, detail=f"原始会话不存在: {original_session_id}")
+
+    dataset_files = [f for f in session_dir.iterdir() if f.is_file()]
+    if not dataset_files:
+        raise HTTPException(status_code=404, detail="数据集文件不存在，可能已过期")
+
+    dataset_path = dataset_files[0]
+
+    # 将原始报告作为上下文附加到追问中
+    augmented_request = question
+    if previous_report.strip():
+        augmented_request = (
+            f"以下是之前的分析报告供参考：\n\n{previous_report}\n\n"
+            f"用户追问：{question}"
+        )
+
+    new_session_id = str(uuid.uuid4())
+    event_buffer.create_session(new_session_id)
+
+    session_logger = SessionLogger(new_session_id, augmented_request)
+    session_loggers[new_session_id] = session_logger
+
+    async def event_callback(event: dict):
+        await manager.send_to_session(new_session_id, event)
+        if new_session_id in session_loggers:
+            session_loggers[new_session_id].log_event(event)
+
+    stop_manager.register(new_session_id)
+
+    def should_stop() -> bool:
+        return stop_manager.should_stop(new_session_id)
+
+    agent_mode = settings.AGENT_MODE
+    if agent_mode == "tool_driven":
+        agent = ToolDrivenAgentLoop(
+            dataset_path=str(dataset_path),
+            user_request=augmented_request,
+            event_callback=event_callback,
+            should_stop=should_stop
+        )
+    elif agent_mode == "task_driven":
+        agent = TaskDrivenAgentLoop(
+            dataset_path=str(dataset_path),
+            user_request=augmented_request,
+            event_callback=event_callback
+        )
+    else:
+        agent = ToolDrivenAgentLoop(
+            dataset_path=str(dataset_path),
+            user_request=augmented_request,
+            event_callback=event_callback,
+            should_stop=should_stop
+        )
+
+    asyncio.create_task(run_agent_with_ws_wait(agent, new_session_id))
+
+    return JSONResponse({
+        "status": "started",
+        "session_id": new_session_id,
+        "ws_url": f"/ws/{new_session_id}"
+    })
+
+
 @app.post("/api/stop/{session_id}")
 async def stop_analysis(session_id: str):
     """

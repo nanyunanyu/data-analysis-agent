@@ -2,9 +2,14 @@
 配置模块 - 集中管理所有配置项
 """
 import os
+from pathlib import Path
 from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
+
+# backend 目录（config 的上一级）
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+DEFAULT_UPLOAD_DIR = str(BACKEND_DIR / "temp")
 
 
 class Settings(BaseSettings):
@@ -37,7 +42,7 @@ class Settings(BaseSettings):
     max_iterations_per_task: int = Field(default=5, alias="MAX_ITERATIONS_PER_TASK")
     
     # 文件配置
-    upload_dir: str = Field(default="/tmp/data_analyst_uploads", alias="UPLOAD_DIR")
+    upload_dir: str = Field(default=DEFAULT_UPLOAD_DIR, alias="UPLOAD_DIR")
     max_file_size: int = Field(default=50 * 1024 * 1024, alias="MAX_FILE_SIZE")
     
     # WebSocket 配置
@@ -66,7 +71,12 @@ class Settings(BaseSettings):
     
     @property
     def UPLOAD_DIR(self) -> str:
-        return self.upload_dir
+        # 始终返回绝对路径：相对路径按 backend 目录解析，
+        # 避免子进程在不同 cwd 下找不到数据文件
+        p = Path(self.upload_dir)
+        if not p.is_absolute():
+            p = BACKEND_DIR / p
+        return str(p.resolve())
     
     @property
     def ALLOWED_EXTENSIONS(self) -> set:

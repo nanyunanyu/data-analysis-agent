@@ -73,7 +73,7 @@ export function CodeBlock({
                     {index + 1}
                   </span>
                 )}
-                <span className="flex-1 text-foreground/90 whitespace-pre">
+                <span className="flex-1 text-foreground whitespace-pre">
                   {highlightPythonSyntax(line)}
                 </span>
               </div>
