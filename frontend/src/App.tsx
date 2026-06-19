@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { Brain, Moon, Sun, Languages } from 'lucide-react'
 import { Button } from './components/ui/Button'
 import { Sidebar } from './components/chat/Sidebar'
@@ -6,7 +6,7 @@ import { ChatArea } from './components/chat/ChatArea'
 import { useConversationStore } from './store/useConversationStore'
 import { useMultiAnalysis } from './hooks/useMultiAnalysis'
 import type { Locale } from './lib/i18n'
-import type { ChatMessage } from './types/chat'
+import type { ChatMessage, ChatImage } from './types/chat'
 
 type Theme = 'light' | 'dark'
 
@@ -21,6 +21,60 @@ function App() {
 
   const store = useConversationStore()
   const multi = useMultiAnalysis()
+
+  // Tracks the backend session currently *running* for each conversation.
+  // For initial analysis this equals datasetSessionId; for a follow-up it is
+  // the freshly-created chat session id. Used so "Stop" targets the right one.
+  const runningSessionRef = useRef<Record<string, string>>({})
+
+  // Shared watcher: poll a conversation's analysis state until it reaches a
+  // terminal status, then persist the report as a chat message. Covers
+  // completed / error / stopped, with a hard timeout failsafe so the UI can
+  // never get stuck on "思考中" if events are lost or the socket drops.
+  const watchCompletion = useCallback((convId: string) => {
+    const startedAt = Date.now()
+    const MAX_WAIT_MS = 10 * 60 * 1000 // 10 minutes
+
+    const finish = (newStatus: 'ready' | 'error' | 'stopped', report: string, images: ChatImage[] | undefined, errMsg?: string) => {
+      clearInterval(poll)
+      multi.disconnect(convId)
+      const zh = (localStorage.getItem('locale') || 'zh') === 'zh'
+      let content = report
+      if (!content) {
+        if (newStatus === 'error') content = (zh ? '分析出错：' : 'Analysis error: ') + (errMsg || (zh ? '未知错误' : 'unknown error'))
+        else if (newStatus === 'stopped') content = zh ? '分析已停止。' : 'Analysis stopped.'
+        else content = zh ? '本次未生成报告内容，请换个问法重试。' : 'No report was produced. Please try rephrasing.'
+      }
+      const assistantMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content,
+        timestamp: Date.now(),
+        images: images ?? undefined,
+      }
+      store.addMessage(convId, assistantMsg)
+      store.updateConversation(convId, { status: newStatus })
+      delete runningSessionRef.current[convId]
+      multi.clearState(convId)
+    }
+
+    const poll = setInterval(() => {
+      const state = multi.statesRef.current[convId]
+      // Timeout failsafe — never hang forever
+      if (Date.now() - startedAt > MAX_WAIT_MS) {
+        finish('error', '', undefined, 'timeout')
+        return
+      }
+      if (!state) return
+      if (state.status === 'completed') {
+        finish('ready', state.report, state.images)
+      } else if (state.status === 'stopped') {
+        finish('stopped', state.report, state.images)
+      } else if (state.status === 'error') {
+        finish('error', state.report, state.images, state.error)
+      }
+    }, 400)
+  }, [multi, store])
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
@@ -93,34 +147,19 @@ function App() {
       const sessionId: string = data.session_id
 
       store.updateConversation(convId, { status: 'analyzing', datasetSessionId: sessionId })
+      runningSessionRef.current[convId] = sessionId
 
-      // Connect WebSocket and listen for events
+      // Ensure no stale connection lingers for this conversation, then connect.
+      multi.disconnect(convId)
+      multi.clearState(convId)
       multi.connect(convId, sessionId)
 
       // Watch for completion and persist the report as a message
-      const poll = setInterval(() => {
-        const state = multi.statesRef.current[convId]
-        if (!state) return
-        if (state.status === 'completed' || state.status === 'error' || state.status === 'stopped') {
-          clearInterval(poll)
-          const newStatus = state.status === 'completed' ? 'ready' : state.status
-          if (state.status === 'completed' && state.report) {
-            const assistantMsg: ChatMessage = {
-              id: crypto.randomUUID(),
-              role: 'assistant',
-              content: state.report,
-              timestamp: Date.now(),
-              images: state.images,
-            }
-            store.addMessage(convId, assistantMsg)
-          }
-          store.updateConversation(convId, { status: newStatus as 'ready' | 'error' | 'stopped' })
-        }
-      }, 500)
+      watchCompletion(convId)
     } catch (e) {
       store.updateConversation(convId, { status: 'error' })
     }
-  }, [store, multi])
+  }, [store, multi, watchCompletion])
 
   const handleFollowUp = useCallback(async (convId: string, question: string) => {
     const conv = store.conversations.find(c => c.id === convId)
@@ -129,13 +168,12 @@ function App() {
     const userMsg: ChatMessage = { id: crypto.randomUUID(), role: 'user', content: question, timestamp: Date.now() }
     store.addMessage(convId, userMsg)
 
-    // Optimistic streaming placeholder
-    const assistantId = crypto.randomUUID()
-    const placeholder: ChatMessage = { id: assistantId, role: 'assistant', content: '', timestamp: Date.now(), isStreaming: true }
-    store.addMessage(convId, placeholder)
-
     // Get last report for context
     const lastReport = [...conv.messages].reverse().find(m => m.role === 'assistant' && m.content.length > 100)?.content ?? ''
+
+    // Switch to analyzing so the live AnalysisView (progress/tasks) shows,
+    // exactly like the initial analysis — no more silent "思考中".
+    store.updateConversation(convId, { status: 'analyzing' })
 
     try {
       const formData = new FormData()
@@ -147,37 +185,34 @@ function App() {
       const data = await res.json()
 
       const chatSessionId: string = data.session_id
+      runningSessionRef.current[convId] = chatSessionId
 
-      // Connect a temporary WS for the follow-up (use a temp key)
-      const tempKey = `chat_${convId}_${Date.now()}`
-      multi.connect(tempKey, chatSessionId)
+      // Reuse the conversation id as the analysis key (clear any stale conn first)
+      multi.disconnect(convId)
+      multi.clearState(convId)
+      multi.connect(convId, chatSessionId)
 
-      const poll = setInterval(() => {
-        const state = multi.statesRef.current[tempKey]
-        if (!state) return
-        if (state.status === 'completed' || state.status === 'error') {
-          clearInterval(poll)
-          multi.disconnect(tempKey)
-          multi.clearState(tempKey)
-          const answer = state.report || (state.error ? `Error: ${state.error}` : '')
-          store.updateLastMessage(convId, { content: answer, isStreaming: false })
-        }
-      }, 300)
+      watchCompletion(convId)
     } catch (e) {
-      store.updateLastMessage(convId, {
+      store.updateConversation(convId, { status: 'ready' })
+      store.addMessage(convId, {
+        id: crypto.randomUUID(),
+        role: 'assistant',
         content: locale === 'zh' ? '追问失败，请重试。' : 'Failed to get answer. Please try again.',
-        isStreaming: false,
+        timestamp: Date.now(),
       })
     }
-  }, [store, multi, locale])
+  }, [store, multi, locale, watchCompletion])
 
   const handleStop = useCallback(async (convId: string) => {
-    const conv = store.conversations.find(c => c.id === convId)
-    if (!conv?.datasetSessionId) return
+    const sessionId = runningSessionRef.current[convId]
+      ?? store.conversations.find(c => c.id === convId)?.datasetSessionId
+    if (!sessionId) return
     try {
-      await fetch(`/api/stop/${conv.datasetSessionId}`, { method: 'POST' })
+      await fetch(`/api/stop/${sessionId}`, { method: 'POST' })
     } catch {}
-    store.updateConversation(convId, { status: 'stopped' })
+    // Let the agent_stopped event drive the final state via watchCompletion;
+    // do not force 'stopped' here or the report message would be skipped.
   }, [store])
 
   const activeConv = store.conversations.find(c => c.id === activeId) ?? null

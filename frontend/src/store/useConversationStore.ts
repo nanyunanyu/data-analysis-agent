@@ -74,6 +74,17 @@ export function useConversationStore() {
     })
   }, [])
 
+  const updateMessageById = useCallback((convId: string, msgId: string, patch: Partial<ChatMessage>) => {
+    setConversations(prev => {
+      const updated = prev.map(c => {
+        if (c.id !== convId) return c
+        return { ...c, messages: c.messages.map(m => m.id === msgId ? { ...m, ...patch } : m), updatedAt: Date.now() }
+      })
+      save(updated)
+      return updated
+    })
+  }, [])
+
   const deleteConversation = useCallback((id: string) => {
     setConversations(prev => {
       const updated = prev.filter(c => c.id !== id)
@@ -99,5 +110,5 @@ export function useConversationStore() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  return { conversations, createConversation, updateConversation, addMessage, updateLastMessage, deleteConversation }
+  return { conversations, createConversation, updateConversation, addMessage, updateLastMessage, updateMessageById, deleteConversation }
 }
